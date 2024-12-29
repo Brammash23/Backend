@@ -415,6 +415,18 @@ app.post("/add-pet", upload.single("image"), (req, res) => {
   }
 });
 
+app.get("/adopters", (req, res) => {
+  const query = "SELECT * FROM adopters";
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching adopters data:", err);
+      return res.status(500).json({ message: "Error fetching adopters data" });
+    }
+    res.status(200).json(results);
+  });
+});
+
   app.listen(8081,()=>{
     console.log("Running Successfully");
   })
