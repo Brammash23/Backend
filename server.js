@@ -371,6 +371,20 @@ app.get('/pets', (req, res) => {
   });
 });
 
+
+app.get('/petsfree', (req, res) => {
+  const state='0';
+  const query = 'SELECT * FROM pets where status=?';  
+  db.query(query,[state],(err, results) => {
+      if (err) {
+          console.error('Error fetching pets:', err);
+          return res.status(500).json({ message: 'Error fetching pet data' });
+      }
+      res.json(results); 
+  });
+});
+
+
 app.post("/add-pet", upload.single("image"), (req, res) => {
   try {
     const { name, age, breed, gender, description, petType } = req.body;
@@ -391,7 +405,6 @@ app.post("/add-pet", upload.single("image"), (req, res) => {
 
     console.log("Pet Data Received:", petData);
 
-    // Now, insert the data into the database
     db.query('INSERT INTO pets (name, age, breed, gender, description,pet_type, image) VALUES (?, ?, ?, ?, ?, ?, ?)', 
       [name, age, breed, gender, description, petType, petData.image], 
       (err, result) => {
@@ -400,12 +413,12 @@ app.post("/add-pet", upload.single("image"), (req, res) => {
           return res.status(500).json({ message: 'Error inserting pet' });
         }
 
-        // Respond with success message after the insert
+      
         res.status(201).json({
           success: true,
           message: 'Pet added successfully',
           petId: result.insertId, 
-          pet: petData, // Include the pet data in the response if needed
+          pet: petData, 
         });
       });
 
