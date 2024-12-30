@@ -4,6 +4,7 @@ const Cors=require('cors')
 const uuid=require('uuid');
 const app=Express();
 const bodyParser=require('body-parser')
+const port=process.env.PORT || 8081
 const { LocalStorage } = require('node-localstorage');
 const localStorage = new LocalStorage('./scratch');
 const nodemailer = require('nodemailer');
@@ -35,7 +36,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Directory to store images
+    cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
@@ -157,9 +158,9 @@ app.get("/adopt", (req, res) => {
         return pet;
       });
     
-      return res.json(updatedMeta); // Send data as JSON
+      return res.json(updatedMeta); 
     } else {
-      return res.json([]); // No pets found, return empty array
+      return res.json([]); 
     }
   });
   
@@ -229,14 +230,14 @@ app.post('/ContactUs',(req,res)=>{
 })
 
 app.post('/myadoptions', (req, res) => {
-  const { Email } = req.body; // Destructure Email from the request body
+  const { Email } = req.body; 
   console.log(Email);
 
   if (!Email) {
     return res.status(400).json({ error: "Email is required" });
   }
 
-  // Query to fetch adopter details and pet details along with the image
+
   const query = `
     SELECT 
       a.firstname AS first_name, 
@@ -303,7 +304,6 @@ app.post('/adaption_verify', async (req, res) => {
               return res.status(500).json("Failed to Insert");
             }
 
-            // Send email
             const transporter = nodemailer.createTransport({
               service: 'gmail',
               auth: {
@@ -440,6 +440,6 @@ app.get("/adopters", (req, res) => {
   });
 });
 
-  app.listen(8081,()=>{
+  app.listen(port,()=>{
     console.log("Running Successfully");
   })
