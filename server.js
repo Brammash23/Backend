@@ -4,6 +4,7 @@ const Cors=require('cors')
 const uuid=require('uuid');
 const app=Express();
 const bodyParser=require('body-parser')
+const bcrypt=require('bcrypt')
 const port=process.env.PORT || 8081
 const { LocalStorage } = require('node-localstorage');
 const localStorage = new LocalStorage('./scratch');
@@ -57,18 +58,22 @@ db.connect((err) => {
   });
 
 
-  app.post('/register', (req, res) => {
+  app.post('/register',async (req, res) => {
     console.log("post Connecion Success")
     const name=req.body.name;
     const email=req.body.email;
     const password=req.body.password;
+    const salt=10;
+    const hashed=await bcrypt.hash(password,salt);
+
+
+    
     const phone=req.body.phone;
-    console.log("query Exceution Success")
     app.use(bodyParser.urlencoded({ extended: true }));
 
     db.query(
       'INSERT INTO pet_adaption.user (name, email, password,phone) VALUES (?, ?, ?,?)',
-      [name, email, password,phone],
+      [name, email, hashed,phone],
       (err, data) => {
           if (err) {
               console.log("Error executing query:", err); 
@@ -84,28 +89,41 @@ db.connect((err) => {
   
 
 
-  app.post('/loginform', (req, res) => {
-    console.log("post Connection Success");
+  app.post('/loginform', async (req, res) => {
+    console.log("Post Connection Success");
 
     const email = req.body.email;
     const password = req.body.password;
 
     db.query(
-        "SELECT * FROM pet_adaption.user WHERE email=? AND password=?",
-        [email, password],
-        (err, data) => {
+        "SELECT * FROM pet_adaption.user WHERE email=?",
+        [email],
+        async (err, data) => {
             if (err) {
                 console.error("Error executing query:", err);
                 return res.status(500).json({ error: "Internal Server Error" });
             }
 
             if (data.length > 0) {
-                console.log("Success");
-                return res.status(200).json({
-                    status: "ok",
-                    message: "Login successful",
-                    email: email,
-                });
+                const dbPassword = data[0].password; // Get hashed password from database
+                
+                // Compare entered password with hashed password
+                const isMatch = await bcrypt.compare(password, dbPassword);
+
+                if (isMatch) {
+                    console.log("Success");
+                    return res.status(200).json({
+                        status: "ok",
+                        message: "Login successful",
+                        email: email,
+                    });
+                } else {
+                    console.log("Failure");
+                    return res.status(401).json({
+                        status: "failure",
+                        message: "Invalid email or password",
+                    });
+                }
             } else {
                 console.log("Failure");
                 return res.status(401).json({
@@ -116,6 +134,7 @@ db.connect((err) => {
         }
     );
 });
+
 app.get('/account', (req, res) => {
 
   const email = req.headers['authorization'] ? req.headers['authorization'].split(' ')[1] : null;
@@ -316,7 +335,7 @@ app.post('/adaption_verify', async (req, res) => {
               from: 'muvarisamy@gmail.com',
               to: email,
               subject: 'Adoption Confirmation',
-              text: 'Thank you for adopting a pet from us!',
+              text: 'Thank you for adopting a pet from us! We will Reach You in Few Days.Wish You a Happy New Year Ahead',
             };
 
             transporter.sendMail(mailOptions, (error, info) => {
@@ -392,7 +411,7 @@ app.post("/add-pet", upload.single("image"), (req, res) => {
     if (!name || !age || !breed || !gender || !description || !petType) {
       return res.status(400).json({ message: "All fields except image are required." });
     }
-
+    const imagePath = req.file ? req.file.path.replace(/\\/g, '/') : null;
     const petData = {
       name,
       age,
@@ -400,7 +419,7 @@ app.post("/add-pet", upload.single("image"), (req, res) => {
       gender,
       description,
       petType,
-      image: req.file ? req.file.path : null,
+      image: req.file ? imagePath : null,
     };
 
     console.log("Pet Data Received:", petData);
